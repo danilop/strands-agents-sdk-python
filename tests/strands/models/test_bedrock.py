@@ -2142,3 +2142,47 @@ def test_format_request_message_content_citation_empty_location(model):
     result = model._format_request_message_content(content)
 
     assert "location" not in result["citationsContent"]["citations"][0]
+
+
+def test_has_client_side_tools_to_execute_with_client_tools(model):
+    """Test that client-side tools are correctly identified as needing execution."""
+    message_content = [
+        {
+            "toolUse": {
+                "toolUseId": "tool-123",
+                "name": "my_tool",
+                "input": {"param": "value"},
+            }
+        }
+    ]
+
+    assert model._has_client_side_tools_to_execute(message_content) is True
+
+
+def test_has_client_side_tools_to_execute_with_server_tools(model):
+    """Test that server-side tools (like nova_grounding) are NOT identified as needing execution."""
+    message_content = [
+        {
+            "toolUse": {
+                "toolUseId": "tool-123",
+                "name": "nova_grounding",
+                "type": "server_tool_use",
+                "input": {},
+            }
+        },
+        {
+            "toolResult": {
+                "toolUseId": "tool-123",
+                "content": [{"text": "Grounding result"}],
+            }
+        },
+    ]
+
+    assert model._has_client_side_tools_to_execute(message_content) is False
+
+
+def test_has_client_side_tools_to_execute_with_no_tools(model):
+    """Test that no tools returns False."""
+    message_content = [{"text": "Just some text"}]
+
+    assert model._has_client_side_tools_to_execute(message_content) is False
