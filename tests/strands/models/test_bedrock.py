@@ -2072,6 +2072,175 @@ async def test_stream_backward_compatibility_system_prompt(bedrock_client, model
     bedrock_client.converse_stream.assert_called_once_with(**expected_request)
 
 
+def test_format_request_message_content_document_char_citation(model):
+    """Test that documentChar citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Doc Citation",
+                    "location": {"documentChar": {"documentIndex": 0, "start": 100, "end": 200}},
+                    "sourceContent": [{"text": "Excerpt"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "documentChar": {"documentIndex": 0, "start": 100, "end": 200}
+    }
+
+
+def test_format_request_message_content_document_page_citation(model):
+    """Test that documentPage citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Page Citation",
+                    "location": {"documentPage": {"documentIndex": 0, "start": 2, "end": 3}},
+                    "sourceContent": [{"text": "Page content"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "documentPage": {"documentIndex": 0, "start": 2, "end": 3}
+    }
+
+
+def test_format_request_message_content_document_chunk_citation(model):
+    """Test that documentChunk citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Chunk Citation",
+                    "location": {"documentChunk": {"documentIndex": 1, "start": 5, "end": 10}},
+                    "sourceContent": [{"text": "Chunk content"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "documentChunk": {"documentIndex": 1, "start": 5, "end": 10}
+    }
+
+
+def test_format_request_message_content_citation_filters_extra_fields(model):
+    """Test that extra fields in citation location inner content are filtered out."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Citation with extra fields",
+                    "location": {"documentChar": {"documentIndex": 0, "start": 0, "end": 50, "extraField": "ignored"}},
+                    "sourceContent": [{"text": "Content"}],
+                }
+            ],
+            "content": [{"text": "Text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    # extraField should be filtered out
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "documentChar": {"documentIndex": 0, "start": 0, "end": 50}
+    }
+
+
+def test_format_request_message_content_citation_unknown_location_type(model):
+    """Test that citations with unknown location types exclude the location field."""
+    content = {
+        "citationsContent": {
+            "citations": [{"title": "Unknown location", "location": {"unknownType": {"field": "value"}}}],
+            "content": [{"text": "Text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert "location" not in result["citationsContent"]["citations"][0]
+
+
+def test_format_request_message_content_web_citation(model):
+    """Test that web citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Web Citation",
+                    "location": {"web": {"url": "https://example.com", "domain": "example.com"}},
+                    "sourceContent": [{"text": "Web content"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "web": {"url": "https://example.com", "domain": "example.com"}
+    }
+
+
+def test_format_request_message_content_web_citation_filters_extra_fields(model):
+    """Test that extra fields in web citation location are filtered out."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Web Citation",
+                    "location": {"web": {"url": "https://example.com", "domain": "example.com", "extra": "ignored"}},
+                    "sourceContent": [{"text": "Content"}],
+                }
+            ],
+            "content": [{"text": "Text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "web": {"url": "https://example.com", "domain": "example.com"}
+    }
+
+
+def test_format_request_message_content_search_result_citation(model):
+    """Test that searchResultLocation citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Search Citation",
+                    "location": {"searchResultLocation": {"searchResultIndex": 1, "start": 0, "end": 50}},
+                    "sourceContent": [{"text": "Search result"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "searchResultLocation": {"searchResultIndex": 1, "start": 0, "end": 50}
+    }
+
+
 def test_has_client_side_tools_to_execute_with_client_tools(model):
     """Test that client-side tools are correctly identified as needing execution."""
     message_content = [
@@ -2186,48 +2355,6 @@ async def test_stream_server_tool_use_does_not_override_stop_reason(bedrock_clie
             {"contentBlockStop": {}},
             {"messageStop": {"stopReason": "end_turn"}},
         ]
-    }
-
-    events = await alist(model.stream(messages))
-
-    # Find the messageStop event
-    message_stop_event = next(e for e in events if "messageStop" in e)
-
-    # Verify stopReason was NOT overridden (should remain end_turn for server-side tools)
-    assert message_stop_event["messageStop"]["stopReason"] == "end_turn"
-
-
-@pytest.mark.asyncio
-async def test_stream_non_streaming_server_tool_use_does_not_override_stop_reason(bedrock_client, alist, messages):
-    """Test that stopReason is NOT overridden for server-side tools in non-streaming mode."""
-    model = BedrockModel(model_id="amazon.nova-premier-v1:0", streaming=False)
-    model.client = bedrock_client
-
-    bedrock_client.converse.return_value = {
-        "output": {
-            "message": {
-                "role": "assistant",
-                "content": [
-                    {
-                        "toolUse": {
-                            "toolUseId": "tool-123",
-                            "name": "nova_grounding",
-                            "type": "server_tool_use",
-                            "input": {},
-                        }
-                    },
-                    {
-                        "toolResult": {
-                            "toolUseId": "tool-123",
-                            "content": [{"text": "Grounding result"}],
-                        }
-                    },
-                    {"text": "Final response based on grounding"},
-                ],
-            }
-        },
-        "stopReason": "end_turn",
-        "usage": {"inputTokens": 10, "outputTokens": 20},
     }
 
     events = await alist(model.stream(messages))

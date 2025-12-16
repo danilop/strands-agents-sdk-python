@@ -1,6 +1,7 @@
 """Citation type definitions for the SDK.
 
 These types are modeled after the Bedrock API.
+https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_CitationLocation.html
 """
 
 from typing import List, Union
@@ -18,11 +19,8 @@ class CitationsConfig(TypedDict):
     enabled: bool
 
 
-class DocumentCharLocation(TypedDict, total=False):
-    """Specifies a character-level location within a document.
-
-    Provides precise positioning information for cited content using
-    start and end character indices.
+class DocumentCharLocationInner(TypedDict, total=False):
+    """Inner content for character-level location within a document.
 
     Attributes:
         documentIndex: The index of the document within the array of documents
@@ -38,11 +36,8 @@ class DocumentCharLocation(TypedDict, total=False):
     end: int
 
 
-class DocumentChunkLocation(TypedDict, total=False):
-    """Specifies a chunk-level location within a document.
-
-    Provides positioning information for cited content using logical
-    document segments or chunks.
+class DocumentChunkLocationInner(TypedDict, total=False):
+    """Inner content for chunk-level location within a document.
 
     Attributes:
         documentIndex: The index of the document within the array of documents
@@ -58,10 +53,8 @@ class DocumentChunkLocation(TypedDict, total=False):
     end: int
 
 
-class DocumentPageLocation(TypedDict, total=False):
-    """Specifies a page-level location within a document.
-
-    Provides positioning information for cited content using page numbers.
+class DocumentPageLocationInner(TypedDict, total=False):
+    """Inner content for page-level location within a document.
 
     Attributes:
         documentIndex: The index of the document within the array of documents
@@ -77,8 +70,89 @@ class DocumentPageLocation(TypedDict, total=False):
     end: int
 
 
-# Union type for citation locations
-CitationLocation = Union[DocumentCharLocation, DocumentChunkLocation, DocumentPageLocation]
+class WebLocationInner(TypedDict, total=False):
+    """Inner content for web-based location.
+
+    Attributes:
+        url: The URL of the web page containing the cited content.
+        domain: The domain of the web page containing the cited content.
+    """
+
+    url: str
+    domain: str
+
+
+class SearchResultLocationInner(TypedDict, total=False):
+    """Inner content for search result location.
+
+    Attributes:
+        searchResultIndex: The index of the search result content block where
+            the cited content is found. Minimum value of 0.
+        start: The starting position in the content array where the cited
+            content begins. Minimum value of 0.
+        end: The ending position in the content array where the cited
+            content ends. Minimum value of 0.
+    """
+
+    searchResultIndex: int
+    start: int
+    end: int
+
+
+class DocumentCharLocation(TypedDict, total=False):
+    """Tagged union wrapper for character-level document location.
+
+    Attributes:
+        documentChar: The character-level location data.
+    """
+
+    documentChar: DocumentCharLocationInner
+
+
+class DocumentChunkLocation(TypedDict, total=False):
+    """Tagged union wrapper for chunk-level document location.
+
+    Attributes:
+        documentChunk: The chunk-level location data.
+    """
+
+    documentChunk: DocumentChunkLocationInner
+
+
+class DocumentPageLocation(TypedDict, total=False):
+    """Tagged union wrapper for page-level document location.
+
+    Attributes:
+        documentPage: The page-level location data.
+    """
+
+    documentPage: DocumentPageLocationInner
+
+
+class WebLocation(TypedDict, total=False):
+    """Tagged union wrapper for web-based location.
+
+    Attributes:
+        web: The web location data.
+    """
+
+    web: WebLocationInner
+
+
+class SearchResultLocation(TypedDict, total=False):
+    """Tagged union wrapper for search result location.
+
+    Attributes:
+        searchResultLocation: The search result location data.
+    """
+
+    searchResultLocation: SearchResultLocationInner
+
+
+# Union type for citation locations - tagged union where exactly one key is present
+CitationLocation = Union[
+    DocumentCharLocation, DocumentChunkLocation, DocumentPageLocation, WebLocation, SearchResultLocation
+]
 
 
 class CitationSourceContent(TypedDict, total=False):
