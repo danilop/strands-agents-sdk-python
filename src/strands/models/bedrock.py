@@ -543,7 +543,8 @@ class BedrockModel(Model):
         """Format a citation location preserving the tagged union structure.
 
         The Bedrock API requires CitationLocation to be a tagged union with exactly one
-        of the following keys: documentChar, documentPage, or documentChunk.
+        of the following keys: web, documentChar, documentPage, documentChunk, or
+        searchResultLocation.
 
         Args:
             location: Citation location to format.
@@ -556,9 +557,11 @@ class BedrockModel(Model):
         """
         # Allowed fields for each tagged union type
         allowed_fields = {
+            "web": ("url", "domain"),
             "documentChar": ("documentIndex", "start", "end"),
             "documentPage": ("documentIndex", "start", "end"),
             "documentChunk": ("documentIndex", "start", "end"),
+            "searchResultLocation": ("searchResultIndex", "start", "end"),
         }
 
         for location_type, fields in allowed_fields.items():

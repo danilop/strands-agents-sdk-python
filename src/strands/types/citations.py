@@ -70,6 +70,35 @@ class DocumentPageLocationInner(TypedDict, total=False):
     end: int
 
 
+class WebLocationInner(TypedDict, total=False):
+    """Inner content for web-based location.
+
+    Attributes:
+        url: The URL of the web page containing the cited content.
+        domain: The domain of the web page containing the cited content.
+    """
+
+    url: str
+    domain: str
+
+
+class SearchResultLocationInner(TypedDict, total=False):
+    """Inner content for search result location.
+
+    Attributes:
+        searchResultIndex: The index of the search result content block where
+            the cited content is found. Minimum value of 0.
+        start: The starting position in the content array where the cited
+            content begins. Minimum value of 0.
+        end: The ending position in the content array where the cited
+            content ends. Minimum value of 0.
+    """
+
+    searchResultIndex: int
+    start: int
+    end: int
+
+
 class DocumentCharLocation(TypedDict, total=False):
     """Tagged union wrapper for character-level document location.
 
@@ -100,8 +129,30 @@ class DocumentPageLocation(TypedDict, total=False):
     documentPage: DocumentPageLocationInner
 
 
+class WebLocation(TypedDict, total=False):
+    """Tagged union wrapper for web-based location.
+
+    Attributes:
+        web: The web location data.
+    """
+
+    web: WebLocationInner
+
+
+class SearchResultLocation(TypedDict, total=False):
+    """Tagged union wrapper for search result location.
+
+    Attributes:
+        searchResultLocation: The search result location data.
+    """
+
+    searchResultLocation: SearchResultLocationInner
+
+
 # Union type for citation locations - tagged union where exactly one key is present
-CitationLocation = Union[DocumentCharLocation, DocumentChunkLocation, DocumentPageLocation]
+CitationLocation = Union[
+    DocumentCharLocation, DocumentChunkLocation, DocumentPageLocation, WebLocation, SearchResultLocation
+]
 
 
 class CitationSourceContent(TypedDict, total=False):

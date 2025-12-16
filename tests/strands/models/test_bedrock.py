@@ -2173,3 +2173,69 @@ def test_format_request_message_content_citation_unknown_location_type(model):
     result = model._format_request_message_content(content)
 
     assert "location" not in result["citationsContent"]["citations"][0]
+
+
+def test_format_request_message_content_web_citation(model):
+    """Test that web citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Web Citation",
+                    "location": {"web": {"url": "https://example.com", "domain": "example.com"}},
+                    "sourceContent": [{"text": "Web content"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "web": {"url": "https://example.com", "domain": "example.com"}
+    }
+
+
+def test_format_request_message_content_web_citation_filters_extra_fields(model):
+    """Test that extra fields in web citation location are filtered out."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Web Citation",
+                    "location": {"web": {"url": "https://example.com", "domain": "example.com", "extra": "ignored"}},
+                    "sourceContent": [{"text": "Content"}],
+                }
+            ],
+            "content": [{"text": "Text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "web": {"url": "https://example.com", "domain": "example.com"}
+    }
+
+
+def test_format_request_message_content_search_result_citation(model):
+    """Test that searchResultLocation citations preserve tagged union structure."""
+    content = {
+        "citationsContent": {
+            "citations": [
+                {
+                    "title": "Search Citation",
+                    "location": {"searchResultLocation": {"searchResultIndex": 1, "start": 0, "end": 50}},
+                    "sourceContent": [{"text": "Search result"}],
+                }
+            ],
+            "content": [{"text": "Generated text"}],
+        }
+    }
+
+    result = model._format_request_message_content(content)
+
+    assert result["citationsContent"]["citations"][0]["location"] == {
+        "searchResultLocation": {"searchResultIndex": 1, "start": 0, "end": 50}
+    }
